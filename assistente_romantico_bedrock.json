@@ -1,0 +1,108 @@
+{
+  "Comment": "Assitente para criar um jantar romântico com sugestão de comidas, bebidas e locais.",
+  "StartAt": "Sugestões de comidas",
+  "States": {
+    "Sugestões de comidas": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrock:invokeModel",
+      "Parameters": {
+        "ModelId": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+        "Body": {
+          "anthropic_version": "bedrock-2023-05-31",
+          "max_tokens": 2000,
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Sugira apenas comidas(entrada, principal e sobremesa) para um jantar romântico, as bebidas serão escolhidas posteriormente"
+                }
+              ]
+            }
+          ]
+        },
+        "ContentType": "application/json",
+        "Accept": "*/*"
+      },
+      "Next": "Salva a sugestão de comida",
+      "ResultPath": "$.result_one",
+      "ResultSelector": {
+        "result_one.$": "$.Body.content[0].text"
+      }
+    },
+    "Salva a sugestão de comida": {
+      "Type": "Pass",
+      "Next": "Sugestão de bebidas",
+      "Parameters": {
+        "convo_one.$": "States.Format('{}\n{}', $.prompt_one, $.result_one.result_one)"
+      },
+      "ResultPath": "$.convo_one"
+    },
+    "Sugestão de bebidas": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrock:invokeModel",
+      "Parameters": {
+        "ModelId": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+        "Body": {
+          "anthropic_version": "bedrock-2023-05-31",
+          "max_tokens": 2000,
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Sugira bebidas que possam acompanhar um jantar romântico exibido acima"
+                }
+              ]
+            }
+          ]
+        },
+        "ContentType": "application/json",
+        "Accept": "*/*"
+      },
+      "Next": "Salva sugestão de bebidas",
+      "ResultSelector": {
+        "result_two.$": "$.Body.content[0].text"
+      },
+      "ResultPath": "$.result_two"
+    },
+    "Salva sugestão de bebidas": {
+      "Type": "Pass",
+      "Next": "Sugestão de local",
+      "Parameters": {
+        "convo_two.$": "States.Format('{}\n{}\n{}', $.convo_one.convo_one, $.prompt_two, $.result_two.result_two)"
+      },
+      "ResultPath": "$.convo_two"
+    },
+    "Sugestão de local": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrock:invokeModel",
+      "Parameters": {
+        "ModelId": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+        "Body": {
+          "anthropic_version": "bedrock-2023-05-31",
+          "max_tokens": 2000,
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Sugira um local romântico para um jantar em São Paulo"
+                }
+              ]
+            }
+          ]
+        },
+        "ContentType": "application/json",
+        "Accept": "*/*"
+      },
+      "End": true,
+      "ResultSelector": {
+        "result_three.$": "$.Body.content[0].text"
+      }
+    }
+  }
+}
